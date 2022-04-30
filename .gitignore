@@ -1,8 +1,8 @@
 .DS_Store
 node_modules/
-zb2xlsx-linux
-zb2xlsx-macos
-zb2xlsx-win.exe
+xml2xlsx-linux
+xml2xlsx-macos
+xml2xlsx-win.exe
 
 # Editor directories and files
 .idea
@@ -11,4 +11,6 @@ zb2xlsx-win.exe
 *.ntvs*
 *.njsproj
 *.sln
+*.xlsx
+*.xml
 package-lock.json

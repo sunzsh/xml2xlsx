@@ -1,6 +1,9 @@
 const fs = require('fs') 
 const ExcelJS = require('exceljs')
 const path = require("path")
+const iconv = require('iconv-lite');
+const jschardet = require('jschardet');
+const parseString = require('xml2js').parseString;
 
 const args = process.argv.slice(2);
 if (!args || args.length == 0) {
@@ -19,10 +22,11 @@ function translateColumnName(num) {
     
     return columnName;
 }
-
-args.forEach(filePath => {
-    doConvert(filePath)
-});
+async function main() {
+    args.forEach(filePath => {
+        doConvert(filePath)
+    });
+}
 
 function soildBorderForRow(row) {
     row._cells.forEach(cell => {
@@ -63,8 +67,8 @@ function buildTitle(sheet, array) {
 
 
 
-function doConvert(filePath) {
-    let array = readArray(filePath)
+async function doConvert(filePath) {
+    let array = await readArray(filePath)
     if (!array || array.length == 0) {
         return ;
     }
@@ -110,18 +114,57 @@ function doConvert(filePath) {
 
 
 function readArray(filePath) {
-    if(!fs.existsSync(filePath)) {
-        console.log(`文件不存在：${filePath}`);
-        return null;
-    }
-    const data = fs.readFileSync(filePath, 'utf8')
 
-    let contentArray;
-    try {
-        contentArray = (new Function("return " + data))();
-    } catch (e) {
-        console.log('文件格式不符合JSON标准 !');
-        return null;
-    }
-    return contentArray
+    return new Promise((resolve, reject) => {
+        if(!fs.existsSync(filePath)) {
+            console.log(`文件不存在：${filePath}`);
+            resolve(null);
+        }
+        var data = fs.readFileSync(filePath);
+        let ret = jschardet.detect(data);
+        var xml = iconv.decode(data,ret.encoding);
+    
+        // console.log(result);
+    
+        const resArray = [ ];
+        parseString(xml, (err, result) => {
+            if (err) {
+                console.error(err);
+                resolve(null);
+                return;
+            }
+            const resArray = [ ];
+            // console.log(result);
+
+            var loadChildData = (data) => {
+                if (data instanceof Array) {
+                    for (const dItem of data) {
+                        if (!dItem.$) {
+                            loadChildData(dItem)
+                        } else {
+                            resArray.push(dItem.$)
+                        }
+                    }
+                } else {
+                    for (const dKey of Object.keys(data)) {
+                        if (dKey === '$') {
+                            continue;
+                        }
+                        loadChildData(data[dKey]);
+                    }
+                }
+            }
+            loadChildData(result);
+            // console.log(resArray);
+    
+            // for (const row of result.Data.YKFP[0].Row) {
+            //     resArray.push(row.$)
+            // }
+            // console.log(resArray);
+    
+            resolve(resArray);
+        });
+    });
 }
+
+main();
