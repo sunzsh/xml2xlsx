@@ -108,6 +108,7 @@ async function doConvert(filePath) {
     })
 
     let xlsxFilePath = path.join(path.dirname(filePath), path.basename(filePath, ".txt") + ".xlsx", );
+    console.log(`succeed to convert ${filePath} to ${xlsxFilePath}`);
     workbook.xlsx.writeFile(xlsxFilePath);
 
 }
